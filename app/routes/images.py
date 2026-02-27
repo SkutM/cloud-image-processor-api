@@ -1,11 +1,11 @@
 import uuid
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.image import Image
 from app.image_processing import generate_thumbnail
-from app.storage import put_bytes
+from app.storage import put_bytes, presign_get_url
 
 router = APIRouter(prefix='/images', tags=['images'])
 
@@ -63,3 +63,30 @@ async def upload_image(
         'width': width,
         'height': height,
     }
+
+@router.get('')
+def list_images(
+    limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    images = (
+        db.query(Image)
+        .order_by(Image.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    items = []
+    for img in images:
+        items.append({
+            "id": str(img.id),
+            "created_at": img.created_at.isoformat() if img.created_at else None,
+            "content_type": img.content_type,
+            "size_bytes": img.size_bytes,
+            "width": img.width,
+            "height": img.height,
+            "original_url": presign_get_url(key=img.original_key),
+            "thumbnail_url": presign_get_url(key=img.thumb_key),
+        })
+
+    return {"items": items}
