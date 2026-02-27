@@ -1,11 +1,11 @@
 import uuid
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query, Path
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.image import Image
 from app.image_processing import generate_thumbnail
-from app.storage import put_bytes, presign_get_url
+from app.storage import put_bytes, presign_get_url, delete_object
 
 router = APIRouter(prefix='/images', tags=['images'])
 
@@ -90,3 +90,23 @@ def list_images(
         })
 
     return {"items": items}
+
+@router.delete('/{image_id}', status_code=204)
+def delete_image(
+    image_id: uuid.UUID = Path(...),
+    db: Session = Depends(get_db),
+):
+    image = db.query(Image).filter(Image.id == image_id).first()
+
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    # delete S3 objects
+    delete_object(key=image.original_key)
+    delete_object(key=image.thumb_key)
+
+    # delete DB row
+    db.delete(image)
+    db.commit()
+
+    return

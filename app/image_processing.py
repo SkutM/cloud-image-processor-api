@@ -17,7 +17,7 @@ def generate_thumbnail(
     with Image.open(BytesIO(image_bytes)) as img:
         # convert to rgb to ensure jpeg compatibility
         if img.mode in ('RGBA', 'P'):
-            img = img.convert('RBG')
+            img = img.convert('RGB')
 
         img.thumbnail((max_size, max_size))
         
