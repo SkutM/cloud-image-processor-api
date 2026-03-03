@@ -3,9 +3,12 @@ import boto3
 from botocore.exceptions import ClientError
 from urllib.parse import urlparse, urlunparse
 
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-S3_BUCKET = os.getenv("S3_BUCKET", "cip-images")
+AWS_REGION = os.getenv("AWS_REGION", "us-west-1")
+S3_BUCKET = os.getenv("S3_BUCKET_NAME")
 S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
+
+if not S3_BUCKET:
+    raise RuntimeError("S3_BUCKET_NAME is not set")
 
 S3_PUBLIC_BASE_URL = os.getenv("S3_PUBLIC_BASE_URL")
 
@@ -13,14 +16,11 @@ S3_PUBLIC_BASE_URL = os.getenv("S3_PUBLIC_BASE_URL")
 PRESIGN_EXPIRES_IN = int(os.getenv("PRESIGN_EXPIRES_IN", "3600"))
 
 def get_s3_client():
-    kwargs = {"region_name": AWS_REGION}
-
-    if S3_ENDPOINT_URL:
-        kwargs["endpoint_url"] = S3_ENDPOINT_URL
-        kwargs["aws_access_key_id"] = os.getenv("AWS_ACCESS_KEY_ID")
-        kwargs["aws_secret_access_key"] = os.getenv("AWS_SECRET_ACCESS_KEY")
-
-    return boto3.client("s3", **kwargs)
+    return boto3.client(
+        "s3",
+        region_name=AWS_REGION,
+        endpoint_url=S3_ENDPOINT_URL or None,
+    )
 
 
 def ensure_bucket_exists():
@@ -28,7 +28,11 @@ def ensure_bucket_exists():
     try:
         s3.head_bucket(Bucket=S3_BUCKET)
     except ClientError:
-        s3.create_bucket(Bucket=S3_BUCKET)
+        # only auto-create for LocalStack
+        if os.getenv("S3_ENDPOINT_URL"):
+            s3.create_bucket(Bucket=S3_BUCKET)
+        else:
+            raise
 
 
 def put_bytes(*, key: str, data: bytes, content_type: str):

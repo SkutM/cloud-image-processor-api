@@ -110,3 +110,24 @@ def delete_image(
     db.commit()
 
     return
+
+@router.get('/{image_id}')
+def get_image(
+    image_id: uuid.UUID = Path(...),
+    db: Session = Depends(get_db),
+):
+    image = db.query(Image).filter(Image.id == image_id).first()
+
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    return {
+        "id": str(image.id),
+        "created_at": image.created_at.isoformat() if image.created_at else None,
+        "content_type": image.content_type,
+        "size_bytes": image.size_bytes,
+        "width": image.width,
+        "height": image.height,
+        "original_url": presign_get_url(key=image.original_key),
+        "thumbnail_url": presign_get_url(key=image.thumb_key),
+    }

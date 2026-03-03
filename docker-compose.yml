@@ -4,21 +4,12 @@ services:
     container_name: image_api
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-
-      - AWS_REGION=us-east-1
-      - S3_BUCKET=cip-images
-      - S3_PUBLIC_BASE_URL=http://localhost:4566
-      - S3_ENDPOINT_URL=http://localstack:4566
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-
+    env_file:
+      - .env
     volumes:
       - .:/app
     depends_on:
       - db
-      - localstack
 
   db:
     image: postgres:15
@@ -32,8 +23,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # LocalStack (S3 emulator)
   localstack:
+    profiles: ["local"]
     image: localstack/localstack:latest
     container_name: localstack
     ports:
