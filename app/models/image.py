@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import String, DateTime, Integer
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
 
@@ -30,4 +30,11 @@ class Image(Base):
         DateTime,
         default=datetime.utcnow,
         nullable=False,
+    )
+
+    variants = relationship(
+        "ImageVariant",
+        back_populates="image",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
