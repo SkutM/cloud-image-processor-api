@@ -66,12 +66,20 @@ async def upload_image(
 
 @router.get('')
 def list_images(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=50),
     limit: int = Query(20, ge=1, le=50),
     db: Session = Depends(get_db)
 ):
+    # total rows
+    total = db.query(Image).count()
+
+    offset = (page - 1) * page_size
+
     images = (
         db.query(Image)
-        .order_by(Image.created_at.desc())
+        .order_by(Image.created_at.desc(), Image.id.desc())
+        .offset(offset)
         .limit(limit)
         .all()
     )
@@ -89,7 +97,15 @@ def list_images(
             "thumbnail_url": presign_get_url(key=img.thumb_key),
         })
 
-    return {"items": items}
+    has_next = offset + len(items) < total
+
+    return {
+        "items": items,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "has_next": has_next
+        }
 
 @router.delete('/{image_id}', status_code=204)
 def delete_image(
