@@ -1,10 +1,10 @@
-import io
 import uuid
 
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.image_processing import generate_thumbnail
+from app.models.image import Image
 from app.models.image_variant import ImageVariant
 from app.storage import get_bytes, put_bytes
 
@@ -25,7 +25,32 @@ def generate_thumbnail_job(image_id: str, original_key: str) -> None:
 
     db: Session = SessionLocal()
     try:
-        existing = (
+        image = (
+            db.query(Image)
+            .filter(Image.id == image_uuid)
+            .first()
+        )
+
+        if image is None:
+            return
+
+        image.width = width
+        image.height = height
+
+        original_variant = (
+            db.query(ImageVariant)
+            .filter(
+                ImageVariant.image_id == image_uuid,
+                ImageVariant.variant == "original",
+            )
+            .first()
+        )
+
+        if original_variant is not None:
+            original_variant.width = width
+            original_variant.height = height
+
+        existing_thumbnail = (
             db.query(ImageVariant)
             .filter(
                 ImageVariant.image_id == image_uuid,
@@ -34,7 +59,7 @@ def generate_thumbnail_job(image_id: str, original_key: str) -> None:
             .first()
         )
 
-        if existing is None:
+        if existing_thumbnail is None:
             db.add(
                 ImageVariant(
                     image_id=image_uuid,
@@ -46,6 +71,7 @@ def generate_thumbnail_job(image_id: str, original_key: str) -> None:
                     height=height,
                 )
             )
-            db.commit()
+
+        db.commit()
     finally:
         db.close()
