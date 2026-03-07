@@ -6,3 +6,5 @@ alembic
 Pillow
 boto3
 python-multipart
+rq
+redis

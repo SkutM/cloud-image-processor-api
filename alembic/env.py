@@ -17,6 +17,8 @@ if config.config_file_name is not None:
 from app.db.session import Base
 from app import models  # noqa: F401
 
+REDIS_URL=redis://redis:6379/0
+
 target_metadata = Base.metadata
 
 

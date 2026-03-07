@@ -17,8 +17,8 @@ class Image(Base):
         default=uuid.uuid4,
     )
 
-    original_key: Mapped[str] = mapped_column(String(512), nullable=False)
-    thumb_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    original_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    thumb_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     content_type: Mapped[str] = mapped_column(String(100), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)

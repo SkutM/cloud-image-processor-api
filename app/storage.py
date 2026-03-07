@@ -90,3 +90,9 @@ def delete_object(*, key: str) -> None:
     ensure_bucket_exists()
     s3 = get_s3_client()
     s3.delete_object(Bucket=S3_BUCKET, Key=key)
+
+def get_bytes(*, key: str) -> bytes:
+    ensure_bucket_exists()
+    s3 = get_s3_client()
+    response = s3.get_object(Bucket=S3_BUCKET, Key=key)
+    return response["Body"].read()
